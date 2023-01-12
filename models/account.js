@@ -70,7 +70,7 @@ const accountSchema = new mongoose.Schema({
   },
 });
 
-userSchema.pre('save', async function (next) {
+accountSchema.pre('save', async (next) => {
   if (!this.isModified('password')) return next();
 
   this.password = await bycrypt.hash(this.password, 12);
@@ -79,6 +79,10 @@ userSchema.pre('save', async function (next) {
 
   next();
 });
+
+accountSchema.methods.correctPassword = async (inputPassword, userPassword) => {
+  return await bycrypt.compare(inputPassword, userPassword);
+};
 
 const Account = mongoose.model('Account', accountSchema);
 
