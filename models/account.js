@@ -18,7 +18,13 @@ const accountSchema = new mongoose.Schema({
 
   lastName: {
     type: String,
-    rewquired: true,
+    required: true,
+  },
+
+  userName: {
+    type: String,
+    required: true,
+    unique: true,
   },
 
   password: {
@@ -74,6 +80,6 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-const account = mongoose.model('Account', accountSchema);
+const Account = mongoose.model('Account', accountSchema);
 
-module.exports = account;
+module.exports = Account;
