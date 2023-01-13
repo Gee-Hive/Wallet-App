@@ -72,4 +72,5 @@ const transfer = async (req, res) => {
   }
 };
 
+const withdrawal = async (req, res) => {};
 module.exports = { transfer };
