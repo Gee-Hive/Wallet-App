@@ -1,5 +1,5 @@
-const Wallets = require('../models/wallets');
-const Transactions = require('../models/transactions');
+const Wallets = require('../models/walletModel');
+const Transactions = require('../models/transactionModel');
 
 const creditAccount = async ({
   amount,
