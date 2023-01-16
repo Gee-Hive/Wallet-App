@@ -1,106 +1,110 @@
-const Accounts = require('./../models/account');
-const Transactions = require('./../models/transactions');
+const Wallets = require('../models/wallets');
+const Transactions = require('../models/transactions');
 
 const creditAccount = async ({
   amount,
-  destinationAccount,
-  operationPurpose,
+  username,
+  purpose,
   reference,
-  reason,
+  summary,
+  trnxSummary,
   session,
 }) => {
-  //find the account associated
-  const account = await Accounts.findOne({ destinationAccount });
-
-  if (!account) {
+  const wallet = await Wallets.findOne({ username });
+  if (!wallet) {
     return {
       status: false,
       statusCode: 404,
-      message: `Account ${destinationAccount} does not exist`,
+      message: `User ${username} doesn\'t exist`,
     };
   }
-  //update the account with amount
-  const updateAccount = await Accounts.findOneAndUpdate(
-    { destinationAccount },
+
+  const updatedWallet = await Wallets.findOneAndUpdate(
+    { username },
     { $inc: { balance: amount } },
     { session }
   );
 
-  //creat a transaction ins
   const transaction = await Transactions.create(
     [
       {
-        transactionType: 'CR',
-        operationPurpose,
+        trnxType: 'CR',
+        purpose,
         amount,
-        destinationAccount,
+        username,
         reference,
-        reason,
+        balanceBefore: Number(wallet.balance),
+        balanceAfter: Number(wallet.balance) + Number(amount),
+        summary,
+        trnxSummary,
       },
     ],
     { session }
   );
 
-  console.log('Credit Successful');
-  //return updatedWallet and transaction data
+  console.log(`Credit successful`);
   return {
     status: true,
-    statusCode: 200,
-    message: 'Credit Successful',
-    data: { updateAccount, transaction },
+    statusCode: 201,
+    message: 'Credit successful',
+    data: { updatedWallet, transaction },
   };
 };
 
-const debitAccount = async (
+const debitAccount = async ({
   amount,
-  destinationAccount,
-  operationPurpose,
+  username,
+  purpose,
   reference,
-  reason,
-  session
-) => {
-  const account = await Accounts.findOne({ destinationAccount });
-  if (!account) {
+  summary,
+  trnxSummary,
+  session,
+}) => {
+  const wallet = await Wallets.findOne({ username });
+  if (!wallet) {
     return {
       status: false,
       statusCode: 404,
-      message: `Account ${destinationAccount} does not exist`,
+      message: `User ${username} doesn\'t exist`,
     };
   }
 
-  if (Number(account.balance) < amount) {
+  if (Number(wallet.balance) < amount) {
     return {
       status: false,
-      statusCode: 404,
-      message: `Account ${destinationAccount} has insufficient balance`,
+      statusCode: 400,
+      message: `User ${username} has insufficient balance`,
     };
   }
 
-  const updateAccount = await Accounts.findOneAndUpdate(
-    { destinationAccount },
+  const updatedWallet = await Wallets.findOneAndUpdate(
+    { username },
     { $inc: { balance: -amount } },
     { session }
   );
   const transaction = await Transactions.create(
     [
       {
-        transactionType: 'DR',
-        operationPurpose,
+        trnxType: 'DR',
+        purpose,
         amount,
-        destinationAccount,
+        username,
         reference,
-        reason,
+        balanceBefore: Number(wallet.balance),
+        balanceAfter: Number(wallet.balance) - Number(amount),
+        summary,
+        trnxSummary,
       },
     ],
     { session }
   );
-  console.log('Debit successful');
 
+  console.log(`Debit successful`);
   return {
     status: true,
-    statusCode: 200,
-    message: `Debit Successful`,
-    data: { updateAccount, transaction },
+    statusCode: 201,
+    message: 'Debit successful',
+    data: { updatedWallet, transaction },
   };
 };
 

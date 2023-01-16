@@ -1,55 +1,53 @@
-const transaction = require('./../models/transaction');
+// controllers/transactions.js
+// const Transactions = require('../models/transactions');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
-const uuid4 = uuid.v4(); //create a unque identifier
+const { v4 } = require('uuid');
 const { creditAccount, debitAccount } = require('../utils/transactions');
 
-//initiate a transfer
 const transfer = async (req, res) => {
   const session = await mongoose.startSession();
-  session.startTransaction; //initiate a database transaction
-
+  session.startTransaction();
   try {
-    const { toAccount, fromAccount, amount, reason } = req.body;
-    const reference = uuid4;
-
-    if (!toAccount && !fromAccount && !amount && !reason) {
+    const { toUsername, fromUsername, amount, summary } = req.body;
+    const reference = v4();
+    if (!toUsername && !fromUsername && !amount && !summary) {
       return res.status(400).json({
         status: false,
-        message: 'please provide all required information',
+        message:
+          'Please provide the following details: toUsername, fromUsername, amount, summary',
       });
     }
 
-    //transfer Result
     const transferResult = await Promise.all([
       debitAccount({
         amount,
-        destinationAccount: fromAccount,
-        operationPurpose: 'transfer',
+        username: fromUsername,
+        purpose: 'transfer',
         reference,
-        reason,
+        summary,
+        trnxSummary: `TRFR TO: ${toUsername}. TRNX REF:${reference} `,
         session,
       }),
       creditAccount({
         amount,
-        destinationAccount: toAccount,
-        operationPurpose: 'transfer',
+        username: toUsername,
+        purpose: 'transfer',
         reference,
-        reason,
+        summary,
+        trnxSummary: `TRFR FROM: ${fromUsername}. TRNX REF:${reference} `,
         session,
       }),
-    ]); //returns a single promise into array containing all results
+    ]);
 
-    const failedTransactions = transferResult.filter((result) => {
-      result.status !== true;
-    }); //return a filtered result of failed transactions based on the status transfer result
-
-    //below check if there is a failed transaction. abort session and return a status set to false to user and error message
-    if (failedTransactions) {
+    const failedTxns = transferResult.filter(
+      (result) => result.status !== true
+    );
+    if (failedTxns.length) {
+      const errors = failedTxns.map((a) => a.message);
       await session.abortTransaction();
       return res.status(400).json({
         status: false,
-        message: failedTransactions.map((a) => a.message),
+        message: errors,
       });
     }
 
@@ -58,19 +56,17 @@ const transfer = async (req, res) => {
 
     return res.status(201).json({
       status: true,
-      message: 'Successfully transferred',
+      message: 'Transfer successful',
     });
   } catch (err) {
-    console.error(err);
     await session.abortTransaction();
     session.endSession();
 
     return res.status(500).json({
       status: false,
-      message: `unable to transfer \n Error: ${err.message} `,
+      message: `Unable to find perform transfer. Please try again. \n Error: ${err}`,
     });
   }
 };
 
-const withdrawal = async (req, res) => {};
 module.exports = { transfer };
