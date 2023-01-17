@@ -8,8 +8,6 @@ const walletTransactionSchema = new mongoose.Schema(
       default: 0.0,
     },
 
-    // Even though user can be implied from wallet, let us
-    // double save it for security
     userId: {
       type: String,
       ref: 'users',

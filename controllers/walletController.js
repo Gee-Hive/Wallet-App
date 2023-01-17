@@ -1,10 +1,13 @@
 const Wallets = require('../models/walletModel');
+const User = require('../models/userModel');
 
 const createWallet = async (req, res) => {
   try {
-    const { username } = req.body;
+    const { email, username } = req.body;
 
-    const walletExists = await Wallets.findOne({ username });
+    const user = await User.findOne({ email: email });
+
+    const walletExists = await Wallets.findOne({ email: user.email });
     if (walletExists) {
       return res.status(409).json({
         status: false,
@@ -12,8 +15,12 @@ const createWallet = async (req, res) => {
       });
     }
 
-    const result = await Wallets.create({ username });
-    console.log(result);
+    const result = await Wallets.create({
+      email: user.email,
+      username: username,
+      userId: user._id,
+    });
+
     return res.status(201).json({
       status: true,
       message: 'Wallets created successfully',
@@ -22,7 +29,7 @@ const createWallet = async (req, res) => {
   } catch (err) {
     return res.status(500).json({
       status: true,
-      message: `Unable to create wallet. Please try again. \n Error: ${err}`,
+      message: `Unable to create wallet. Please create account `,
     });
   }
 };

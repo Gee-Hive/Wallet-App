@@ -9,11 +9,9 @@ const walletSchema = new mongoose.Schema(
     },
     username: {
       type: String,
-      // required: true,
       trim: true,
       immutable: true,
-      // unique: true,
-      ref: 'Users',
+      unique: true,
     },
     balance: {
       type: mongoose.Decimal128,

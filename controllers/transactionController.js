@@ -82,7 +82,7 @@ const transfer = async (req, res) => {
 const getPayResponse = async (req, res) => {
   const { transaction_id } = req.query;
 
-  // URL with transaction ID of which will be used to confirm transaction status
+  // URL with transaction ID from flutterwave will be used to confirm transaction status
   const url = `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`;
 
   // Network call to confirm transaction status

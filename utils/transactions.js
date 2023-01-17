@@ -45,7 +45,6 @@ const creditAccount = async ({
     { session }
   );
 
-  console.log(`Credit successful`);
   return {
     status: true,
     statusCode: 201,
@@ -104,7 +103,6 @@ const debitAccount = async ({
     { session }
   );
 
-  console.log(`Debit successful`);
   return {
     status: true,
     statusCode: 201,

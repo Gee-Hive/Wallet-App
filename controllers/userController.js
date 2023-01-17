@@ -23,7 +23,6 @@ const createAndSendToken = function (user, statusCode, res) {
   res.cookie('jwt', token, cookieOptions);
 
   user.password = undefined;
-  //cookie code stops here
 
   //send token
   res.status(statusCode).json({
@@ -63,7 +62,6 @@ exports.login = async (req, res, next) => {
   const user = await User.findOne({ email }).select('+password');
 
   //iii) check if everything is fine , then send token to user
-  //implement function in model file
 
   if (!user || !(await user.correctPassword(password, user.password))) {
     return next(new Error('invalid password or email', 401));

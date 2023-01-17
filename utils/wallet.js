@@ -54,7 +54,6 @@ const createTransaction = async (
       {
         userId,
         transactionId: id,
-        // name: customer.name,
         email: customer.email,
         phone: customer.phone_number,
         amount,
