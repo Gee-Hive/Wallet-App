@@ -11,24 +11,25 @@
       <button type="button" onClick="makePayment()">Pay Now</button>
     </form>
 
-    <script>
+    <script type="module">
+      import { v4 } from 'uuid';
       function makePayment() {
         FlutterwaveCheckout({
-          public_key: 'YOUR_PUBLIC_KEY_HERE',
-          tx_ref: 'hooli-tx-1920bbtyt',
+          public_key: 'FLWPUBK_TEST-0afa616dd71ca020ec3516502a6af143-X',
+          tx_ref: v4(),
           amount: 1000,
           currency: 'NGN',
           country: 'NG',
           payment_options: 'card',
 
           // specified redirect URL
-          redirect_url: 'http://localhost:4001/response',
+          redirect_url: 'http://localhost:3000/api/v1/transactions/response',
 
           // use customer details if user is not logged in, else add user_id to the request
           customer: {
-            email: 'demomail@gmail.com',
+            email: 'rose@gmail.com',
             phone_number: '08088098622',
-            name: 'Idris Olubisi',
+            name: 'rose darry',
           },
           callback: function (data) {
             console.log(data);

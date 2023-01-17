@@ -7,16 +7,17 @@ const bcrypt = require('bcryptjs');
 const userSchema = new mongoose.Schema({
   firstName: {
     type: String,
-    default: null,
+    // required: true,
   },
   lastName: {
     type: String,
-    default: null,
+    // required: true,
   },
   email: {
     type: String,
     unique: true,
     lowercase: true,
+    required: true,
 
     validate: [validator.isEmail, 'Please input a valid Email '],
   },
@@ -55,4 +56,6 @@ userSchema.methods.correctPassword = async function (
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
-module.exports = mongoose.model('Users', userSchema);
+
+const User = mongoose.model('Users', userSchema);
+module.exports = User;

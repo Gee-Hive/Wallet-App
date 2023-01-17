@@ -1,26 +1,29 @@
+const User = require('../models/userModel');
 const Wallets = require('../models/walletModel');
 const Transactions = require('../models/transactionModel');
 
 const creditAccount = async ({
   amount,
-  username,
+  email,
   purpose,
   reference,
   summary,
   trnxSummary,
   session,
 }) => {
-  const wallet = await Wallets.findOne({ username });
+  const user = await User.findOne({ email: email });
+
+  const wallet = await Wallets.findOne({ userId: user._id });
   if (!wallet) {
     return {
       status: false,
       statusCode: 404,
-      message: `User ${username} doesn\'t exist`,
+      message: `User ${email} doesn\'t exist`,
     };
   }
 
   const updatedWallet = await Wallets.findOneAndUpdate(
-    { username },
+    { userId: user._id },
     { $inc: { balance: amount } },
     { session }
   );
@@ -31,7 +34,7 @@ const creditAccount = async ({
         trnxType: 'CR',
         purpose,
         amount,
-        username,
+        email,
         reference,
         balanceBefore: Number(wallet.balance),
         balanceAfter: Number(wallet.balance) + Number(amount),
@@ -53,19 +56,21 @@ const creditAccount = async ({
 
 const debitAccount = async ({
   amount,
-  username,
+  email,
   purpose,
   reference,
   summary,
   trnxSummary,
   session,
 }) => {
-  const wallet = await Wallets.findOne({ username });
+  const user = await User.findOne({ email: email });
+
+  const wallet = await Wallets.findOne({ userId: user._id });
   if (!wallet) {
     return {
       status: false,
       statusCode: 404,
-      message: `User ${username} doesn\'t exist`,
+      message: `User ${wallet} doesn\'t exist`,
     };
   }
 
@@ -73,12 +78,12 @@ const debitAccount = async ({
     return {
       status: false,
       statusCode: 400,
-      message: `User ${username} has insufficient balance`,
+      message: `User ${wallet} has insufficient balance`,
     };
   }
 
   const updatedWallet = await Wallets.findOneAndUpdate(
-    { username },
+    { userId: user._id },
     { $inc: { balance: -amount } },
     { session }
   );
@@ -88,7 +93,7 @@ const debitAccount = async ({
         trnxType: 'DR',
         purpose,
         amount,
-        username,
+        email,
         reference,
         balanceBefore: Number(wallet.balance),
         balanceAfter: Number(wallet.balance) - Number(amount),

@@ -1,17 +1,26 @@
 // controllers/transactions.js
-const Transactions = require('../models/transactionModel');
-const Wallets = require('../models/walletModel');
+const axios = require('axios');
+const Transaction = require('../models/transactionModel');
+const Wallet = require('../models/walletModel');
 const mongoose = require('mongoose');
+const User = require('../models/userModel');
 const { v4 } = require('uuid');
 const { creditAccount, debitAccount } = require('../utils/transactions');
+const {
+  validateUserWallet,
+  createWalletTransaction,
+  createTransaction,
+  updateWallet,
+} = require('../utils/wallet');
 
+//transfer method is going to be doing wallet to wallet transactions
 const transfer = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    const { toUsername, fromUsername, amount, summary } = req.body;
+    const { toUser, fromUser, amount, summary } = req.body;
     const reference = v4();
-    if (!toUsername && !fromUsername && !amount && !summary) {
+    if (!toUser && !fromUser && !amount && !summary) {
       return res.status(400).json({
         status: false,
         message:
@@ -22,20 +31,20 @@ const transfer = async (req, res) => {
     const transferResult = await Promise.all([
       debitAccount({
         amount,
-        username: fromUsername,
+        email: fromUser,
         purpose: 'transfer',
         reference,
         summary,
-        trnxSummary: `TRFR TO: ${toUsername}. TRNX REF:${reference} `,
+        trnxSummary: `TRFR TO: ${toUser}. TRNX REF:${reference} `,
         session,
       }),
       creditAccount({
         amount,
-        username: toUsername,
+        email: toUser,
         purpose: 'transfer',
         reference,
         summary,
-        trnxSummary: `TRFR FROM: ${fromUsername}. TRNX REF:${reference} `,
+        trnxSummary: `TRFR FROM: ${fromUser}. TRNX REF:${reference} `,
         session,
       }),
     ]);
@@ -70,81 +79,63 @@ const transfer = async (req, res) => {
   }
 };
 
-const withdrawal = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+const getPayResponse = async (req, res) => {
+  const { transaction_id } = req.query;
 
+  // URL with transaction ID of which will be used to confirm transaction status
+  const url = `https://api.flutterwave.com/v3/transactions/${transaction_id}/verify`;
+
+  // Network call to confirm transaction status
+  const response = await axios({
+    url,
+    method: 'get',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `${process.env.FLUTTERWAVE_V3_SECRET_KEY}`,
+    },
+  });
+
+  console.log();
+  const { status, currency, id, amount, customer } = response.data.data;
+
+  // check if transaction id already exist
+  const transactionExist = await Transaction.findOne({ transactionId: id });
+
+  if (transactionExist) {
+    return res.status(409).send('Transaction Already Exist');
+  }
+
+  // check if customer exist in our database
+  const user = await User.findOne({ email: customer.email });
+
+  // check if user have a wallet, else create wallet
+  const wallet = await validateUserWallet(user._id, user.email);
+
+  // create wallet transaction
+  await createWalletTransaction(user._id, status, currency, amount);
+
+  // create transaction
+  await createTransaction(user._id, id, status, currency, amount, customer);
+
+  await updateWallet(user._id, amount);
+
+  return res.status(200).json({
+    response: 'wallet funded successfully',
+    data: wallet,
+  });
+};
+
+const getBalance = async (req, res) => {
   try {
-    //1)get the wallet in the database
-    const { username, amount, summary } = req.body;
-    const wallet = await Wallets.findOne(username);
-    const reference = v4();
+    const { userId } = req.params;
 
-    //2) create the checkout session for
-    //a) information about the session itself
-    const stripeSession = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      success_url: `${req.protocol}://${req.get('host')}/?wallet=${
-        req.params.username
-      }&summary=${req.params.summary}&amount=${amount}`, //the query after the question mark is because "the result of the success object will be used for creating a new list of created and paid tours"
-      cancel_url: `${req.protocol}://${req.get('host')}/deposit/${
-        wallet.username
-      }`,
-      // customer_email: req.user.email,
-      client_reference_id: reference, //allows us pass in some data about the session we are currently creating
-
-      //below is the information about the product the user is about to purchase
-      line_items: [
-        {
-          name: `${wallet.username} wallet`,
-          summary: summary,
-          amount: amount * 100,
-          currency: 'usd',
-        },
-      ],
-    });
-
-    //3) return the checkout session to client
-    res.status(200).json({
-      status: 'success',
-      session,
-    });
-
-    if (stripeSession.result.status === 'success') {
-      await debitAccount({
-        amount,
-        username: fromUsername,
-        purpose: 'withdraw',
-        reference,
-        summary: null,
-        trnxSummary: `TRFR TO: ${toUsername}. TRNX REF:${reference} `,
-        session,
-      });
-    }
+    const wallet = await Wallet.findOne({ userId });
+    // user
+    res.status(200).json(wallet.balance);
   } catch (err) {
     console.log(err);
   }
 };
 
-const deposit = async (req, res) => {
-  try {
-    const paymentResponse = await paymentService.debitCard(
-      req.body.card,
-      req.body.amount
-    );
-
-    const transaction = new Transactions();
-    transaction.amount = req.body.amount;
-    transaction.operation = 'deposit';
-    transaction.accountNumber = req.customer.accountNumber;
-    transaction.reference = v4();
-    const savedTransaction = await transaction.save();
-    const savedUsername = await Wallets.findById(req.username._id);
-    const response = {
-      transaction: savedTransaction,
-      customer: savedUsername,
-    };
-    res.json(response);
-  } catch (error) {}
-};
-module.exports = { transfer };
+module.exports = { transfer, getPayResponse, getBalance };

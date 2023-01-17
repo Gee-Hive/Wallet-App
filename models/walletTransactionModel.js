@@ -39,4 +39,8 @@ const walletTransactionSchema = new mongoose.Schema(
   { timestamp: true }
 );
 
-module.exports = mongoose.model('walletTransaction', walletTransactionSchema);
+const walletTrnxModel = mongoose.model(
+  'walletTransaction',
+  walletTransactionSchema
+);
+module.exports = walletTrnxModel;

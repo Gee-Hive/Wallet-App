@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const jwt = require('jsonwebtoken');
 
 const signToken = function (id) {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -38,7 +38,8 @@ const createAndSendToken = function (user, statusCode, res) {
 //for signup
 exports.signup = async (req, res, next) => {
   const newUser = await User.create({
-    name: req.body.name,
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
@@ -48,7 +49,7 @@ exports.signup = async (req, res, next) => {
 };
 
 //for login
-exports.login = catchAsync(async (req, res, next) => {
+exports.login = async (req, res, next) => {
   const { email, password } = req.body;
 
   // i) check if email and password exists
@@ -68,4 +69,4 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new Error('invalid password or email', 401));
   }
   createAndSendToken(user, 200, res);
-});
+};

@@ -2,13 +2,18 @@ const mongoose = require('mongoose');
 
 const walletSchema = new mongoose.Schema(
   {
-    username: {
+    email: {
       type: String,
       required: true,
+      ref: 'Users',
+    },
+    username: {
+      type: String,
+      // required: true,
       trim: true,
       immutable: true,
-      unique: true,
-      ref: 'users',
+      // unique: true,
+      ref: 'Users',
     },
     balance: {
       type: mongoose.Decimal128,
@@ -18,7 +23,7 @@ const walletSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.ObjectId,
       required: true,
-      ref: 'users',
+      ref: 'Users',
     },
   },
   { timestamps: true }
