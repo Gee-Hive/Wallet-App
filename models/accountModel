@@ -1,0 +1,43 @@
+const mongoose = require('mongoose');
+
+const accountSchema = new mongoose.Schema({
+  fromWalletID: {
+    type: mongoose.Schema.ObjectId,
+    required: true,
+    ref: 'Wallets',
+  },
+
+  accountNumber: {
+    type: String,
+    required: true,
+  },
+
+  accountCode: {
+    type: String,
+    required: true,
+  },
+
+  amount: {
+    type: mongoose.Decimal128,
+    required: true,
+    default: 0.0,
+  },
+
+  currency: {
+    type: String,
+    required: true,
+    enum: ['NGN', 'USD'],
+  },
+
+  narration: {
+    type: String,
+  },
+
+  reference: {
+    type: String,
+  },
+});
+
+const account = mongoose.model('Accounts', accountSchema);
+
+module.exports = account;

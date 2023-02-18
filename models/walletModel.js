@@ -23,6 +23,16 @@ const walletSchema = new mongoose.Schema(
       required: true,
       ref: 'Users',
     },
+    lock: {
+      type: Boolean,
+      default: false,
+      select: false,
+    },
+    unlock: {
+      type: Boolean,
+      default: true,
+      select: false,
+    },
   },
   { timestamps: true }
 );

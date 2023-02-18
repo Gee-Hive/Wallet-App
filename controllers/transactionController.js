@@ -138,4 +138,79 @@ const getBalance = async (req, res) => {
   }
 };
 
-module.exports = { transfer, getPayResponse, getBalance };
+const withdraw = async (req, res) => {
+  //first we debit amount from wallet in db
+  const { fromWalletID, accountNumber, amount, narration, accountCode } =
+    req.body;
+
+  //check if user exists in db
+  const user = await User.findOne({ email: fromWalletID });
+  //find wallet to deduct from
+  const wallet = await Wallet.findOne({ userId: user._id });
+
+  if (!wallet) {
+    return {
+      status: false,
+      statusCode: 404,
+      message: `User ${wallet} doesn\'t exist`,
+    };
+  }
+
+  if (Number(wallet.balance) < amount) {
+    return {
+      status: false,
+      statusCode: 400,
+      message: `User ${wallet} has insufficient balance`,
+    };
+  }
+
+  const updatedWallet = await Wallets.findOneAndUpdate(
+    { userId: user._id },
+    { $inc: { balance: -amount } },
+    { session }
+  );
+  const transaction = await Transactions.create([
+    {
+      trnxType: 'DR',
+      purpose,
+      amount,
+      email,
+      reference,
+      balanceBefore: Number(wallet.balance),
+      balanceAfter: Number(wallet.balance) - Number(amount),
+      summary,
+      trnxSummary,
+    },
+  ]);
+
+  //after wallet has been debited, we credit the account using provider(flutterwave)
+
+  const url = `https://api.flutterwave.com/v3/transfers`;
+
+  const data = {
+    account_bank: accountCode,
+    account_number: accountNumber,
+    amount: amount,
+    currency: 'NGN',
+    narration: narration,
+  };
+  const r = await axios({
+    url,
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `${process.env.FLUTTERWAVE_V3_SECRET_KEY}`,
+    },
+  });
+
+  //after account has been credited, create a transaction in db to show CR, cause a debit must show a credit
+  return {
+    status: true,
+    statusCode: 201,
+    message: 'Transaction successful',
+    data: { updatedWallet, transaction },
+  };
+};
+module.exports = { transfer, getPayResponse, withdraw, getBalance };
