@@ -26,12 +26,16 @@ const walletSchema = new mongoose.Schema(
     lock: {
       type: Boolean,
       default: false,
-      select: false,
+      // select: false,
     },
     unlock: {
       type: Boolean,
       default: true,
       select: false,
+    },
+    status: {
+      type: String,
+      enum: ['unlocked', 'locked'],
     },
   },
   { timestamps: true }

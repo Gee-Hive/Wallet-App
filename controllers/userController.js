@@ -68,3 +68,74 @@ exports.login = async (req, res, next) => {
   }
   createAndSendToken(user, 200, res);
 };
+
+exports.deActivateUser = async (req, res, next) => {
+  try {
+    //get the user from the database and see if it exists using req body
+
+    const user = await User.findOne({ email: req.body.email });
+
+    //check for error if user doesnt exists in database
+    if (!user) {
+      return next(new Error('user not found', 401));
+    }
+    //if user exists, update the user status to inactive
+
+    const updateUserStatus = await User.findOneAndUpdate(
+      { _id: user._id },
+      { status: 'inactive' }
+    );
+
+    return res.status(200).json({
+      status: true,
+      message: 'User has been de-activated successfully',
+    });
+  } catch (err) {
+    return res.status(500).json({
+      status: false,
+      message: err.message,
+    });
+  }
+};
+
+exports.activateUser = async (req, res, next) => {
+  try {
+    //get user from body params
+    const { email, phoneNumber } = req.body;
+    //check for error if user doesnt exist in database
+    if (!email && !phoneNumber) {
+      return res.status(404).json({
+        status: false,
+        message: 'please provide the following details: email and phone number',
+      });
+    }
+    //check if the user exists now
+    const user = User.findOne(
+      { email: email },
+      { phoneNumber: phoneNumber },
+      { status: 'inactive' }
+    );
+    if (!user) {
+      return res.statusCode(400).json({
+        status: false,
+        message: 'deactivated user doesn not exist ',
+      });
+    }
+    //if user exists, update the user status to active, with narration(if you want)
+    const updateUserStatus = await User.findOneAndUpdate(
+      { email: user.email },
+      { status: 'active' }
+    );
+
+    return res.statusCode(200).json({
+      status: true,
+      message: 'user activated successfully',
+      data: updateUserStatus,
+    });
+  } catch (err) {
+    return res.statusCode(500).json({
+      status: false,
+      message: `Unable to activate user. please try again \n Error: ${err}`,
+    });
+  }
+};

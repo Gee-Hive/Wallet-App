@@ -11,4 +11,6 @@ router.get('/wallet/:userId/balance', Transactions.getBalance);
 
 router.post('/withdraw', Transactions.withdraw);
 
+router.post('/pay-bills', Transactions.payBills);
+
 module.exports = router;

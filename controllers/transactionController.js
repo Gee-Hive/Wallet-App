@@ -213,4 +213,102 @@ const withdraw = async (req, res) => {
     data: { updatedWallet, transaction },
   };
 };
-module.exports = { transfer, getPayResponse, withdraw, getBalance };
+
+const payBills = async (req, res) => {
+  //check if he wallet balance has sufficient amount
+  const { network, fromRecipient, toRecipient, eventType, amount, summary } =
+    req.body;
+  const reference = v4();
+  if (!network && !toRecipient && !fromRecipient && !amount && !summary) {
+    return res.status(400).json({
+      status: false,
+      message:
+        'Please provide the following details: network, toRecipient, amount, summary',
+    });
+  }
+
+  const user = await User.findOne({ email: fromRecipient });
+
+  const wallet = await Wallets.findOne({ userId: user._id });
+  if (!wallet) {
+    return {
+      status: false,
+      statusCode: 404,
+      message: `User ${wallet} doesn\'t exist`,
+    };
+  }
+
+  if (Number(wallet.balance) < amount) {
+    return {
+      status: false,
+      statusCode: 400,
+      message: `User ${wallet} has insufficient balance`,
+    };
+  }
+
+  const updatedWallet = await Wallet.findOneAndUpdate(
+    { userId: user._id },
+    { $inc: { balance: -amount } },
+    { session }
+  );
+  const transaction = await Transaction.create([
+    {
+      trnxType: 'DR',
+      purpose,
+      amount,
+      email,
+      reference,
+      balanceBefore: Number(wallet.balance),
+      balanceAfter: Number(wallet.balance) - Number(amount),
+      summary,
+      trnxSummary,
+    },
+  ]);
+
+  //debit the wallet first with amount
+  //now make an api call to the business infastruture to run the transaction(INTERGRATE THE APPLIC)
+
+  const billerNameUrl = `https://api.flutterwave.com/v3/bill-categories?${eventType}=1`;
+
+  const getBillerName = await axios({
+    method: 'GET',
+    billerNameUrl,
+    headers: {
+      'Content-type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `${process.env.FLUTTERWAVE_V3_SECRET_KEY}`,
+    },
+  });
+
+  ////////////////////////////////////////////////////////////////
+  const { biller_name } = getBillerName.data.data;
+
+  const url = `https://api.flutterwave.com/v3/bills`;
+  const response = await axios({
+    method: 'POST',
+    url,
+    headers: {
+      'Content-type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `${process.env.FLUTTERWAVE_V3_SECRET_KEY}`,
+    },
+    data: {
+      country: 'NG',
+      customer: toRecipient,
+      amount: amount,
+      recurrence: 'ONCE',
+      type: eventType,
+      reference: reference,
+      biller_name: biller_name,
+    },
+  });
+
+  return res.status(200).json({
+    response: 'Bill payment successful',
+    data: response.data,
+    updatedWallet,
+    transaction,
+  });
+};
+
+module.exports = { transfer, getPayResponse, withdraw, getBalance, payBills };

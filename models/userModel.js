@@ -21,6 +21,9 @@ const userSchema = new mongoose.Schema({
 
     validate: [validator.isEmail, 'Please input a valid Email '],
   },
+  phoneNumber: {
+    type: String,
+  },
   password: {
     type: String,
     required: [true, 'A password is required'],
@@ -37,6 +40,12 @@ const userSchema = new mongoose.Schema({
       },
       message: 'passwords are not the same',
     },
+  },
+
+  status: {
+    type: String,
+    default: 'active',
+    enum: ['active', 'inactive'],
   },
 });
 

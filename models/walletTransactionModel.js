@@ -33,6 +33,11 @@ const walletTransactionSchema = new mongoose.Schema(
       required: [true, 'payment status is required'],
       enum: ['successful', 'pending', 'failed'],
     },
+    totalTRNX: {
+      type: {
+        number: Number,
+      },
+    },
   },
   { timestamp: true }
 );
