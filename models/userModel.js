@@ -9,10 +9,12 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+
   lastName: {
     type: String,
     required: true,
   },
+
   email: {
     type: String,
     unique: true,
@@ -21,14 +23,21 @@ const userSchema = new mongoose.Schema({
 
     validate: [validator.isEmail, 'Please input a valid Email '],
   },
+
   phoneNumber: {
     type: String,
   },
+
   password: {
     type: String,
     required: [true, 'A password is required'],
     minLength: 8,
     select: false,
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'], // to indicate the list of options for this schema type
+    default: 'user',
   },
 
   passwordConfirm: {
@@ -47,6 +56,10 @@ const userSchema = new mongoose.Schema({
     default: 'active',
     enum: ['active', 'inactive'],
   },
+
+  passwordResetToken: String,
+
+  passwordResetExpires: Date,
 });
 
 userSchema.pre('save', async function (next) {

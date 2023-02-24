@@ -17,8 +17,12 @@ const validateUserWallet = async (userId, email) => {
       return wallet;
     }
     return userWallet;
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    return {
+      status: false,
+      statusCode: 404,
+      message: ` Cannot validate user at this time. Error: ${err.message}`,
+    };
   }
 };
 
@@ -35,7 +39,11 @@ const createWalletTransaction = async (userId, status, currency, amount) => {
     });
     return walletTransaction;
   } catch (error) {
-    console.log(error);
+    return {
+      status: false,
+      statusCode: 404,
+      message: ` Cannot create wallet transaction at this time. Error: ${err.message}`,
+    };
   }
 };
 
@@ -64,7 +72,11 @@ const createTransaction = async (
     ]);
     return transaction;
   } catch (error) {
-    console.log(error);
+    return {
+      status: false,
+      statusCode: 404,
+      message: ` Cannot establish user transaction at this time. Error: ${err.message}`,
+    };
   }
 };
 
@@ -79,7 +91,11 @@ const updateWallet = async (userId, amount) => {
     );
     return wallet;
   } catch (error) {
-    console.log(error);
+    return {
+      status: false,
+      statusCode: 404,
+      message: ` Cannot update user at this time. Error: ${err.message}`,
+    };
   }
 };
 
